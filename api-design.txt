@@ -1,0 +1,46 @@
+User Registration
+Endpoint: POST /api/v1/auth/register
+Description: Allows users to create a new account.
+Request body: { "username": "john", "password": "password123" }
+Response: { "message": "User registered successfully" }
+
+User Login
+Endpoint: POST /api/v1/auth/login
+Description: Allows users to log in to their account and receive a JWT token for authentication.
+Request body: { "username": "john", "password": "password123" }
+Response: { "token": "..." }
+
+Get All Jokes (Public)
+Endpoint: GET /api/v1/jokes
+Description: Retrieves a list of all publicly available jokes.
+Response: { "jokes": [...] }
+
+Get A Joke (Public)
+Endpoint: GET /api/v1/jokes/{id}
+Description: Retrieves a particular joke.
+Response: { "jokeId": "jokeText" }
+
+Get All Users (Admin)
+Endpoint: GET /api/v1/users
+Description: Retrieves a list of all users.
+Authorization: Bearer Token
+Response: { "users": [...] }
+
+Get A User (Admin or Authenticated User)
+Endpoint: GET /api/v1/users/{id}
+Description: Retrieves information about a specific user.
+Authorization: Bearer Token
+Response: { "user": {user properties} }
+
+Get User Jokes (Authenticated User)
+Endpoint: GET /api/v1/users/{id}/jokes
+Description: Retrieves a list of jokes specific to the authenticated user.
+Authorization: Bearer Token
+Response: { "userJokes": [...] }
+
+Save Joke
+Endpoint: POST /api/v1/users/{id}/jokes
+Description: Saves a joke to the authenticated user's list of jokes.
+Authorization: Bearer Token
+Request body: { "jokeId": "jokeText" }
+Response: { "message": "Joke saved successfully", "savedJoke": "jokeText" }
