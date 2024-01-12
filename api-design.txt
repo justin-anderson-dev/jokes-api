@@ -1,13 +1,13 @@
 User Registration
 Endpoint: POST /api/v1/auth/register
 Description: Allows users to create a new account.
-Request body: { "username": "john", "password": "password123" }
+Request body: { "username": "john@noemail.com", "password": "password123" }
 Response: { "message": "User registered successfully" }
 
 User Login
 Endpoint: POST /api/v1/auth/login
 Description: Allows users to log in to their account and receive a JWT token for authentication.
-Request body: { "username": "john", "password": "password123" }
+Request body: { "username": "john@noemail.com", "password": "password123" }
 Response: { "token": "..." }
 
 Get All Jokes (Public)
