@@ -1,15 +1,24 @@
 import express, { Express, Request, Response } from 'express';
+import http from 'http';
+import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
+import usersRoutes from './routes/users.routes';
 
 dotenv.config();
 
-const app: Express = express();
-const port = process.env.PORT || 3000;
+import { port } from './config';
 
-app.get('/', (req: Request, res: Response) => {
-  res.send('My Server');
+const app: Express = express();
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use('/api/v1/users', usersRoutes);
+
+app.get('/', async (req: Request, res: Response) => {
+  res.status(200).json({ message: 'My API Server' });
 });
 
-app.listen(port, () => {
-  console.log(`[server]: Server is running at http://localhost:${port}`);
+const server = http.createServer(app);
+
+server.listen(port, () => {
+  console.log(`API started at http://localhost:${port}`);
 });
