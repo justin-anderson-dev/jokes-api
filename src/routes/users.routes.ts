@@ -1,23 +1,31 @@
 import { Router, Request, Response } from 'express';
+import User, { UserMap } from '../models/user';
+import database from '../database';
 
 const router = Router();
 
-// GET /users
+// GET - users
 router.get('/', async (req: Request, res: Response) => {
-  res.status(200).json({ message: 'GET /api/v1/users' });
+  UserMap(database);
+  const users = await User.findAll();
+  res.status(200).json({ users: users });
 });
 
-// GET /users/:id
+// GET - users/:id
 router.get('/:id', async (req: Request, res: Response) => {
-  // TODO: build response
-  const result: string = `GET /api/v1/users/${req.params.id}`;
+  UserMap(database);
+  const id = Number(req.params.id);
+  const result = await User.findByPk(id);
   res.status(200).json({ user: result });
 });
 
-// POST /users
+// POST - users
 router.post('/', async (req: Request, res: Response) => {
-  //TODO: build response
-  res.status(201).json({ user: req.body, message: 'POST /api/v1/users' });
+  let newUser = req.body;
+  UserMap(database);
+  const result = await User.create(newUser);
+  newUser = result.dataValues as User;
+  res.status(201).json({ user: newUser });
 });
 
 export default router;
