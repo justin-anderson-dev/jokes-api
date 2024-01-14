@@ -9,7 +9,7 @@ export const JokeMap = (sequelize: Sequelize) => {
   Joke.init(
     {
       id: {
-        type: DataTypes.INTEGER.UNSIGNED,
+        type: DataTypes.INTEGER,
         autoIncrement: true,
         primaryKey: true
       },
@@ -24,7 +24,5 @@ export const JokeMap = (sequelize: Sequelize) => {
       timestamps: false
     }
   );
-  Joke.sync().then(() => {
-    console.log('Joke table created');
-  });
+  Joke.sync();
 };

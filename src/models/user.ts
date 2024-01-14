@@ -10,12 +10,13 @@ export const UserMap = (sequelize: Sequelize) => {
   User.init(
     {
       id: {
-        type: DataTypes.INTEGER.UNSIGNED,
+        type: DataTypes.INTEGER,
         autoIncrement: true,
         primaryKey: true
       },
       username: {
         type: DataTypes.STRING(128),
+        unique: true,
         allowNull: false
       },
       password: {
@@ -29,7 +30,5 @@ export const UserMap = (sequelize: Sequelize) => {
       timestamps: false
     }
   );
-  User.sync().then(() => {
-    console.log('User table created');
-  });
+  User.sync();
 };
