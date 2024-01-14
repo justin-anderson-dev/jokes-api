@@ -3,6 +3,7 @@ import http from 'http';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
 import usersRoutes from './routes/users.routes';
+import jokesRoutes from './routes/jokes.routes';
 
 dotenv.config();
 
@@ -12,6 +13,7 @@ const app: Express = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/api/v1/users', usersRoutes);
+app.use('/api/v1/jokes', jokesRoutes);
 
 app.get('/', async (req: Request, res: Response) => {
   res.status(200).json({ message: 'My API Server' });
