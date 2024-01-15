@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     //   /* Visit https://aka.ms/tsconfig to read more about this file */
+    "sourceMap": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "target": "es2022",
@@ -15,6 +16,6 @@
     "outDir": "dist",
     "lib": ["es2022"]
   },
-  "include": ["./src/**/*.ts"],
+  "include": ["./src/**/*.ts", "db/seedTestData.ts"],
   "exclude": ["./node_modules", "./dist", "./src/__tests__"]
 }
