@@ -1,10 +1,5 @@
 import { Sequelize, Model, DataTypes } from 'sequelize';
 
-export default class Joke extends Model {
-  public id?: number;
-  public joke!: string;
-}
-
 export const JokeMap = (sequelize: Sequelize) => {
   Joke.init(
     {
@@ -24,5 +19,9 @@ export const JokeMap = (sequelize: Sequelize) => {
       timestamps: false
     }
   );
-  Joke.sync();
 };
+
+export default class Joke extends Model {
+  public id?: number;
+  public joke!: string;
+}

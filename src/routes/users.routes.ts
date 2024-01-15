@@ -7,14 +7,12 @@ const router = Router();
 
 // GET - users
 router.get('/', async (req: Request, res: Response) => {
-  UserMap(database);
   const users = await User.findAll();
   res.status(200).json({ users: users });
 });
 
 // GET - users/:id
 router.get('/:id', async (req: Request, res: Response) => {
-  UserMap(database);
   const id = Number(req.params.id);
   const result = await User.findByPk(id);
   res.status(200).json({ user: result });
@@ -23,7 +21,6 @@ router.get('/:id', async (req: Request, res: Response) => {
 // POST - users
 router.post('/', async (req: Request, res: Response) => {
   let newUser = req.body;
-  UserMap(database);
   try {
     const result = await User.create(newUser);
     newUser = result.dataValues as User;
@@ -41,7 +38,6 @@ router.post('/', async (req: Request, res: Response) => {
 
 // DELETE - users/:id (delete by id or username property)
 router.delete('/:user', async (req: Request, res: Response) => {
-  UserMap(database);
   const idOrUsername = req.params.user;
   let result;
 
@@ -60,5 +56,4 @@ router.delete('/:user', async (req: Request, res: Response) => {
   }
 });
 
-/
 export default router;

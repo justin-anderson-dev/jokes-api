@@ -1,11 +1,5 @@
 import { Sequelize, Model, DataTypes } from 'sequelize';
 
-export default class User extends Model {
-  public id?: number;
-  public username!: string;
-  public password!: string;
-}
-
 export const UserMap = (sequelize: Sequelize) => {
   User.init(
     {
@@ -30,5 +24,10 @@ export const UserMap = (sequelize: Sequelize) => {
       timestamps: false
     }
   );
-  User.sync();
 };
+
+export default class User extends Model {
+  public id?: number;
+  public username!: string;
+  public password!: string;
+}
