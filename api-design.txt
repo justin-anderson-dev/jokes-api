@@ -20,6 +20,13 @@ Endpoint: GET /api/v1/jokes/{id}
 Description: Retrieves a particular joke.
 Response: { "jokeId": "jokeText" }
 
+Add New Joke to Database (Admin)
+Endpoint: POST /api/v1/jokes
+Description: Adds a new joke to the jokes database.
+Authorization: Bearer Token
+Request body: { "joke": "jokeText" }
+Response: { "message": "Joke saved successfully", "savedJoke": {"jokeId": "jokeText"} }
+
 Get All Users (Admin)
 Endpoint: GET /api/v1/users
 Description: Retrieves a list of all users.
@@ -38,9 +45,11 @@ Description: Retrieves a list of jokes specific to the authenticated user.
 Authorization: Bearer Token
 Response: { "userJokes": [...] }
 
-Save Joke
+Save Joke to User List (Authenticated User)
 Endpoint: POST /api/v1/users/{id}/jokes
 Description: Saves a joke to the authenticated user's list of jokes.
 Authorization: Bearer Token
 Request body: { "jokeId": "jokeText" }
-Response: { "message": "Joke saved successfully", "savedJoke": "jokeText" }
+Response: { "message": "Joke saved successfully", "savedJoke": {"jokeId": "jokeText"} }
+
+
