@@ -5,6 +5,7 @@ import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
 import usersRoutes from './routes/users.routes';
 import jokesRoutes from './routes/jokes.routes';
+import authRoutes from './routes/auth.routes';
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/api/v1/users', usersRoutes);
 app.use('/api/v1/jokes', jokesRoutes);
+app.use('/api/v1/auth', authRoutes);
 
 app.get('/', async (req: Request, res: Response) => {
   res.status(200).json({ message: 'My API Server' });

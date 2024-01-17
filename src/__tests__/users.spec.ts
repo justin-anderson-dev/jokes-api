@@ -32,12 +32,6 @@ describe('Users routes', () => {
   });
 
   it('should return a user by id', async () => {
-    const mockUser = {
-      id: 1,
-      username: 'test1@testemail.com',
-      password: 'testpassword'
-    };
-
     jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
 
     const response = await request(server).get('/api/v1/users/1');
@@ -85,83 +79,20 @@ describe('Users routes', () => {
     });
   });
 
-  // POST - /users
-  it('should create a new user and return the created user', async () => {
-    const mockUser: User = {
-      id: 3,
-      username: 'test3@testemail.com',
-      password: 'testpassword'
-    };
-
-    jest.spyOn(prisma.user, 'create').mockResolvedValue(mockUser);
-
-    const response = await request(server).post('/api/v1/users').send({
-      username: 'test3@testemail.com',
-      password: 'testpassword'
-    });
-
-    expect(prisma.user.create).toHaveBeenCalledWith({
-      data: {
-        username: 'test3@testemail.com',
-        password: 'testpassword'
-      }
-    });
-    expect(response.status).toBe(201);
-    expect(response.body).toEqual({ user: mockUser });
-  });
-
-  it('should return a 409 error if the user already exists', async () => {
-    const existingUser: User = {
-      id: 1,
-      username: 'test1@testemail.com',
-      password: 'testpassword'
-    };
-
-    jest.spyOn(prisma.user, 'create').mockImplementation(() => {
-      throw new Prisma.PrismaClientKnownRequestError(
-        'A unique constraint would be violated on User. Details: Field name = username',
-        {
-          clientVersion: '2.30.0',
-          code: 'P2002',
-          meta: {
-            target: ['username']
-          }
-        }
-      );
-    });
-
-    const response = await request(server).post('/api/v1/users').send({
-      username: 'test1@testemail.com',
-      password: 'testpassword'
-    });
-
-    expect(prisma.user.create).toHaveBeenCalledWith({
-      data: {
-        username: 'test1@testemail.com',
-        password: 'testpassword'
-      }
-    });
-    expect(response.status).toBe(409);
-    expect(response.body).toEqual({ error: 'Username already exists' });
-  });
-
   // test DELETE - users/:id
   // test DELETE - users/:user
   describe('DELETE /api/v1/users/:user', () => {
     it('should delete a user by id and return a success message', async () => {
-      const mockUser = {
-        id: 1,
-        username: 'test1@testemail.com',
-        password: 'testpassword'
-      };
-
       jest.spyOn(prisma.user, 'delete').mockResolvedValue(mockUser);
 
       const response = await request(server).delete('/api/v1/users/1');
 
       expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 1 } });
       expect(response.status).toBe(200);
-      expect(response.body).toEqual({ message: 'User deleted successfully' });
+      expect(response.body).toEqual({
+        message: 'User deleted successfully',
+        user: mockUser
+      });
     });
 
     it('should return a 404 error if the user with the specified id is not found', async () => {
@@ -188,7 +119,7 @@ describe('Users routes', () => {
     });
 
     it('should delete a user by username and return a success message', async () => {
-      const mockUser = {
+      const mockUser: User = {
         id: 1,
         username: 'test1@testemail.com',
         password: 'testpassword'
@@ -204,7 +135,10 @@ describe('Users routes', () => {
         where: { username: 'test1@testemail.com' }
       });
       expect(response.status).toBe(200);
-      expect(response.body).toEqual({ message: 'User deleted successfully' });
+      expect(response.body).toEqual({
+        message: 'User deleted successfully',
+        user: mockUser
+      });
     });
   });
 
