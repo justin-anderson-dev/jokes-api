@@ -12,3 +12,19 @@ export const handleGetJokesByUserId = async (req: Request, res: Response) => {
     res.status(200).json({ jokes: result });
   }
 };
+
+export const handleAddJokeToUser = async (req: Request, res: Response) => {
+  const { jokeId, userId } = req.body;
+  const join = await prisma.userJoke.create({
+    data: {
+      jokeId: Number(jokeId),
+      userId: Number(userId)
+    }
+  });
+  const result = await prisma.joke.findUnique({
+    where: { id: Number(join.jokeId) }
+  });
+  res
+    .status(201)
+    .json({ message: 'UserJoke connected successfully', joke: result });
+};
