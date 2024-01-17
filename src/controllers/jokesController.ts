@@ -1,0 +1,1 @@
+// TODO: cut and paste the code from the jokes.routes.ts file, refactor router functions to user named functions from controller files rather than anonymous functions as second arguments. Repeat for remaining routes.
