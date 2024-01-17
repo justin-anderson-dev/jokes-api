@@ -16,8 +16,8 @@ router.get('/:id/jokes', async (req: Request, res: Response) => {
   const result = await prisma.joke.findMany({
     where: { users: { some: { userId: Number(id) } } }
   });
-  if (result === null) {
-    res.status(404).json({ error: 'User not found' });
+  if (result === null || result.length === 0) {
+    res.status(404).json({ error: 'User not found or user has no jokes' });
   } else {
     res.status(200).json({ jokes: result });
   }
@@ -80,6 +80,24 @@ router.delete('/:user', async (req: Request, res: Response) => {
         .json({ error: 'An error occurred while deleting the user' });
     }
   }
+});
+
+// POST - users/:id/jokes (add a joke to a user's list of jokes)
+router.post('/:id/jokes', async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const { jokeId, userId } = req.body;
+  const join = await prisma.userJoke.create({
+    data: {
+      jokeId: Number(jokeId),
+      userId: Number(userId)
+    }
+  });
+  const result = await prisma.joke.findUnique({
+    where: { id: Number(join.jokeId) }
+  });
+  res
+    .status(201)
+    .json({ message: 'UserJoke connected successfully', joke: result });
 });
 
 export default router;

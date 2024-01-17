@@ -24,8 +24,8 @@ Add New Joke to Database (Admin)
 Endpoint: POST /api/v1/jokes
 Description: Adds a new joke to the jokes database.
 Authorization: Bearer Token
-Request body: { "joke": "jokeText" }
-Response: { "message": "Joke saved successfully", "savedJoke": {"jokeId": "jokeText"} }
+Request body: { "content": content }
+Response: { "message": "Joke created successfully", "joke": {joke} }
 
 Get All Users (Admin)
 Endpoint: GET /api/v1/users
@@ -49,7 +49,7 @@ Save Joke to User List (Authenticated User)
 Endpoint: POST /api/v1/users/{id}/jokes
 Description: Saves a joke to the authenticated user's list of jokes.
 Authorization: Bearer Token
-Request body: { "jokeId": "jokeText" }
-Response: { "message": "Joke saved successfully", "savedJoke": {"jokeId": "jokeText"} }
+Request body: { "jokeId": id, "userId": id }
+Response: { "message": "Joke saved successfully", "joke": {"jokeId": "jokeText"} }
 
 
