@@ -97,8 +97,8 @@ async function connectUsersWithJokes(userId: number, jokeIds: number[]) {
 async function seedUserJokes() {
   try {
     await connectUsersWithJokes(1, [1, 2, 3]);
-    await connectUsersWithJokes(2, [2, 3]);
-    await connectUsersWithJokes(3, [1, 2]);
+    await connectUsersWithJokes(2, [2, 3, 4]);
+    await connectUsersWithJokes(3, [1, 2, 5]);
   } catch (error) {
     console.error(error);
   }
