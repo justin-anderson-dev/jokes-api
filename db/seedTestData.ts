@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { hash } from 'bcrypt';
 // TODO: drop tables and recreate them before seeding
 
 const prisma = new PrismaClient();
@@ -7,7 +8,7 @@ async function addTestUsers() {
   const testUser1 = await prisma.user.create({
     data: {
       username: 'john@noemail.com',
-      password: 'abc123',
+      password: await hash('abc123', 10),
       jokes: {}
     }
   });
@@ -16,7 +17,7 @@ async function addTestUsers() {
   const testUser2 = await prisma.user.create({
     data: {
       username: 'jane@noemail.com',
-      password: 'abc123',
+      password: await hash('abc123', 10),
       jokes: {}
     }
   });
@@ -25,7 +26,7 @@ async function addTestUsers() {
   const testUser3 = await prisma.user.create({
     data: {
       username: 'rick@noemail.com',
-      password: 'abc123',
+      password: await hash('abc123', 10),
       jokes: {}
     }
   });
