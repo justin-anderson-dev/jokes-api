@@ -12,7 +12,7 @@
     "dev": "nodemon src/index.ts",
     "clean": "rimraf dist",
     "test:clean": "rimraf coverage",
-    "db:build": "npx prisma migrate dev --name init",
+    "db:build": "npx prisma generate",
     "db:seed": "ts-node ./db/seedTestData.ts",
     "db:clean": "node ./db/dbscript.js",
     "report": "open ./coverage/index.html"

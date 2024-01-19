@@ -1,11 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 import { hash } from 'bcrypt';
+import { User } from '@prisma/client';
 // TODO: drop tables and recreate them before seeding
 
 const prisma = new PrismaClient();
 
 async function addTestUsers() {
-  const testUser1 = await prisma.user.create({
+  const testUser1: User = await prisma.user.create({
     data: {
       username: 'john@noemail.com',
       password: await hash('abc123', 10),
@@ -14,7 +15,7 @@ async function addTestUsers() {
   });
   console.log('Created new user: ', testUser1);
 
-  const testUser2 = await prisma.user.create({
+  const testUser2: User = await prisma.user.create({
     data: {
       username: 'jane@noemail.com',
       password: await hash('abc123', 10),
@@ -23,7 +24,7 @@ async function addTestUsers() {
   });
   console.log('Created new user: ', testUser2);
 
-  const testUser3 = await prisma.user.create({
+  const testUser3: User = await prisma.user.create({
     data: {
       username: 'rick@noemail.com',
       password: await hash('abc123', 10),
@@ -31,6 +32,16 @@ async function addTestUsers() {
     }
   });
   console.log('Created new user: ', testUser3);
+
+  const testUserAdmin: User = await prisma.user.create({
+    data: {
+      username: 'admin@noemail.com',
+      password: await hash('abc123', 10),
+      jokes: {},
+      role: 'Admin'
+    }
+  });
+  console.log('Created new user: ', testUserAdmin);
 }
 
 async function addTestJokes() {

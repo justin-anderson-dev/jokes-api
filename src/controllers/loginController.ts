@@ -3,6 +3,7 @@ import { prisma } from '..';
 import { compare } from 'bcrypt';
 import { sign } from 'jsonwebtoken';
 import * as config from '../config';
+import { User } from '@prisma/client';
 
 export const handleLogin = async (req: Request, res: Response) => {
   try {
@@ -11,7 +12,7 @@ export const handleLogin = async (req: Request, res: Response) => {
     if (!username || !password) {
       res.status(400).json({ error: 'Username and password are required' });
     }
-    const user = await prisma.user.findUnique({
+    const user: User | null = await prisma.user.findUnique({
       where: { username }
     });
 
@@ -24,7 +25,11 @@ export const handleLogin = async (req: Request, res: Response) => {
       } else {
         // Generate JWT that expires in 1h
         const token = sign(
-          { userId: user.id, username: user.username },
+          {
+            userId: user.id,
+            userName: user.username,
+            userRole: user.role
+          },
           config.jwt_secret!,
           {
             expiresIn: '1h',
@@ -36,7 +41,7 @@ export const handleLogin = async (req: Request, res: Response) => {
         );
 
         // Return JWT in response
-        res.status(200).json({ jokeToken: token });
+        res.status(200).json({ token: token });
       }
     }
   } catch (error) {

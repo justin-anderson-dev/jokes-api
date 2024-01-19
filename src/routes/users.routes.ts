@@ -1,4 +1,7 @@
 import { Router } from 'express';
+import { checkToken } from '../middleware/checkToken';
+import { checkRole } from '../middleware/checkRole';
+import { RoleName } from '@prisma/client';
 
 import {
   handleDeleteUser,
@@ -13,18 +16,36 @@ import {
 const router = Router();
 
 // GET - /users
-router.get('/', handleGetAllUsers);
-
-// GET - /users/:id/jokes
-router.get('/:id/jokes', handleGetJokesByUserId);
+router.get('/', [checkToken, checkRole([RoleName.Admin])], handleGetAllUsers);
 
 // GET - /users/:id
-router.get('/:id', handleGetAUser);
+router.get(
+  '/:id',
+  [checkToken, checkRole([RoleName.User, RoleName.Admin])],
+  handleGetAUser
+);
+
+// GET - /users/:id/jokes
+router.get(
+  '/:id/jokes',
+  [checkToken, checkRole([RoleName.User, RoleName.Admin])],
+  handleGetJokesByUserId
+);
+
+//TODO: Add route for updating user
 
 // DELETE - /users/:id
-router.delete('/:user', handleDeleteUser);
+router.delete(
+  '/:user',
+  [checkToken, checkRole([RoleName.Admin])],
+  handleDeleteUser
+);
 
 // POST - /users/:id/jokes
-router.post('/:id/jokes', handleAddJokeToUser);
+router.post(
+  '/:id/jokes',
+  [checkToken, checkRole([RoleName.User, RoleName.Admin])],
+  handleAddJokeToUser
+);
 
 export default router;

@@ -10,11 +10,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum RoleName {
+  Admin
+  User
+}
+
 model User {
   id        Int     @default(autoincrement()) @id
   username  String  @unique
   password  String
   jokes     UserJoke[]
+  role      RoleName  @default(User)
 }
 
 model Joke {
@@ -31,3 +37,4 @@ model UserJoke {
 
   @@id([userId, jokeId])
 }
+

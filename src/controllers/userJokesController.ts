@@ -1,7 +1,14 @@
 import { Request, Response } from 'express';
 import { prisma } from '../index';
+import * as permissions from '../util/permissions';
 
+// USER role users can only get their own jokes
+// ADMIN role users can get any user's jokes'
 export const handleGetJokesByUserId = async (req: Request, res: Response) => {
+  if (!permissions.subjectHasThisId && !permissions.subjectIsAdmin(req)) {
+    res.status(403).json({ error: 'Unauthorized' });
+    return;
+  }
   const id = Number(req.params.id);
   const result = await prisma.joke.findMany({
     where: { users: { some: { userId: Number(id) } } }
@@ -13,7 +20,13 @@ export const handleGetJokesByUserId = async (req: Request, res: Response) => {
   }
 };
 
+// USER role users can only add jokes to their own list
+// ADMIN role users can add jokes to any user's list
 export const handleAddJokeToUser = async (req: Request, res: Response) => {
+  if (!permissions.subjectHasThisId && !permissions.subjectIsAdmin(req)) {
+    res.status(403).json({ error: 'Unauthorized' });
+    return;
+  }
   const { jokeId, userId } = req.body;
   const join = await prisma.userJoke.create({
     data: {
