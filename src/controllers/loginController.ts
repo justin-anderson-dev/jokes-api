@@ -23,7 +23,7 @@ export const handleLogin = async (req: Request, res: Response) => {
       if (!passwordValid) {
         res.status(401).json({ error: 'Invalid password' });
       } else {
-        // Generate JWT that expires in 1h
+        // Generate JWT that expires in 24h
         const token = sign(
           {
             userId: user.id,
@@ -32,7 +32,7 @@ export const handleLogin = async (req: Request, res: Response) => {
           },
           config.jwt_secret!,
           {
-            expiresIn: '1h',
+            expiresIn: '24h',
             notBefore: '0',
             algorithm: 'HS256',
             audience: config.jwt_audience,
