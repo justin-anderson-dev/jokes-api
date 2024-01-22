@@ -10,10 +10,11 @@ jest.mock('bcrypt', () => ({
 }));
 const mockHashedPassword = 'mockHashedPassword';
 
-describe('Registration routes', () => {
+describe('Auth routes', () => {
   afterAll((done) => {
     server.close(done); // Close the server after all tests have completed
   });
+
   // POST - /users
   it('should create a new user and return the created user', async () => {
     const mockUser: User = {
@@ -79,5 +80,23 @@ describe('Registration routes', () => {
     });
     expect(response.status).toBe(409);
     expect(response.body).toEqual({ error: 'Username already exists' });
+  });
+
+  it('should return 500 if an error occurs while registering', async () => {
+    jest.clearAllMocks();
+
+    jest.spyOn(prisma.user, 'create').mockImplementation(() => {
+      throw new Error('Database error');
+    });
+
+    const response = await request(server).post('/api/v1/auth/register').send({
+      username: 'someguy1@testemail.com',
+      password: 'testpassword'
+    });
+
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual({
+      error: 'An error occurred while creating the user'
+    });
   });
 });

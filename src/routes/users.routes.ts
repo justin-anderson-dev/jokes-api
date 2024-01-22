@@ -1,42 +1,51 @@
-import { Prisma } from '@prisma/client';
-import { Router, Request, Response } from 'express';
-import { prisma } from '../index';
+import { Router } from 'express';
+import { checkToken } from '../middleware/checkToken';
+import { checkRole } from '../middleware/checkRole';
+import { RoleName } from '@prisma/client';
+
 import {
   handleDeleteUser,
   handleGetAUser,
   handleGetAllUsers
 } from '../controllers/usersController';
-import { handleGetJokesByUserId } from '../controllers/userJokesController';
+import {
+  handleAddJokeToUser,
+  handleGetJokesByUserId
+} from '../controllers/userJokesController';
 
 const router = Router();
 
 // GET - /users
-router.get('/', handleGetAllUsers);
-
-// GET - /users/:id/jokes
-router.get('/:id/jokes', handleGetJokesByUserId);
+router.get('/', [checkToken, checkRole([RoleName.Admin])], handleGetAllUsers);
 
 // GET - /users/:id
-router.get('/:id', handleGetAUser);
+router.get(
+  '/:id',
+  [checkToken, checkRole([RoleName.User, RoleName.Admin])],
+  handleGetAUser
+);
 
-// DELETE - /users/:id (delete by id or username property)
-router.delete('/:user', handleDeleteUser);
+// GET - /users/:id/jokes
+router.get(
+  '/:id/jokes',
+  [checkToken, checkRole([RoleName.User, RoleName.Admin])],
+  handleGetJokesByUserId
+);
 
-// POST - /users/:id/jokes (add a joke to a user's list of jokes)
-router.post('/:id/jokes', async (req: Request, res: Response) => {
-  const { jokeId, userId } = req.body;
-  const join = await prisma.userJoke.create({
-    data: {
-      jokeId: Number(jokeId),
-      userId: Number(userId)
-    }
-  });
-  const result = await prisma.joke.findUnique({
-    where: { id: Number(join.jokeId) }
-  });
-  res
-    .status(201)
-    .json({ message: 'UserJoke connected successfully', joke: result });
-});
+//TODO: Add route for updating user
+
+// DELETE - /users/:id
+router.delete(
+  '/:user',
+  [checkToken, checkRole([RoleName.Admin])],
+  handleDeleteUser
+);
+
+// POST - /users/:id/jokes
+router.post(
+  '/:id/jokes',
+  [checkToken, checkRole([RoleName.User, RoleName.Admin])],
+  handleAddJokeToUser
+);
 
 export default router;
