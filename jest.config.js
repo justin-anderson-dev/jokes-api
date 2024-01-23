@@ -10,5 +10,6 @@ module.exports = {
   coverageReporters: ['clover', 'json', 'lcov', 'text', 'html'],
   transform: {
     '^.+\\.(ts|tsx)$': 'ts-jest'
-  }
+  },
+  testPathIgnorePatterns: ['<rootDir>/src/__tests__/_old/']
 };

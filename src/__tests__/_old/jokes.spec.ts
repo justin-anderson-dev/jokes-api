@@ -1,6 +1,6 @@
-import { server } from '../index';
+import { server } from '../../index';
 import request from 'supertest';
-import { prisma } from '../index'; // Import your Prisma client
+import { prisma } from '../../index'; // Import your Prisma client
 
 jest.spyOn(prisma.joke, 'findMany').mockResolvedValue([
   // Mocked response

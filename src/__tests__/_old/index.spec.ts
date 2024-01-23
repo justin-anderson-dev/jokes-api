@@ -1,4 +1,4 @@
-import { server, app } from '../index';
+import { server, app } from '../../index';
 import request from 'supertest';
 
 describe('Express app', () => {

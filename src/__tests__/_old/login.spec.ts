@@ -1,6 +1,6 @@
 import request from 'supertest';
-import { server } from '../index';
-import { prisma } from '../index';
+import { server } from '../../index';
+import { prisma } from '../../index';
 import * as bcrypt from 'bcrypt';
 import { mock } from 'node:test';
 

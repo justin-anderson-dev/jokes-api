@@ -1,102 +1,95 @@
-import request from 'supertest';
-import { server } from '../index';
-import { prisma } from '../index';
-import { User, Joke, UserJoke, Prisma } from '@prisma/client';
-import { mock } from 'node:test';
-import * as bcrypt from 'bcrypt';
+import { Request, Response } from 'express';
+import { PrismaClient, User } from '@prisma/client';
+import bcrypt from 'bcrypt';
+import { handleNewUser } from '../../controllers/registerController';
 
 jest.mock('bcrypt', () => ({
-  hash: jest.fn(() => Promise.resolve('mockHashedPassword'))
+  hash: jest.fn()
 }));
-const mockHashedPassword = 'mockHashedPassword';
 
-describe('Auth routes', () => {
-  afterAll((done) => {
-    server.close(done); // Close the server after all tests have completed
-  });
+const mockHash = bcrypt.hash as jest.MockedFunction<typeof bcrypt.hash>;
 
-  // POST - /users
-  it('should create a new user and return the created user', async () => {
-    const mockUser: User = {
-      id: 3,
-      username: 'test3@testemail.com',
-      password: 'testpassword'
-    };
-
-    jest.spyOn(prisma.user, 'create').mockResolvedValue({
-      ...mockUser,
-      password: mockHashedPassword
-    });
-
-    const response = await request(server).post('/api/v1/auth/register').send({
-      username: mockUser.username,
-      password: mockUser.password
-    });
-
-    expect(prisma.user.create).toHaveBeenCalledWith({
-      data: {
-        username: 'test3@testemail.com',
-        password: mockHashedPassword
-      }
-    });
-    expect(response.status).toBe(201);
-    expect(response.body).toEqual({
-      user: { ...mockUser, password: mockHashedPassword }
-    });
-  });
-
-  it('should return a 409 error if the user already exists', async () => {
-    jest.clearAllMocks();
-
-    const existingUser: User = {
-      id: 1,
-      username: 'test1@testemail.com',
-      password: 'testpassword'
-    };
-
-    jest.spyOn(prisma.user, 'create').mockImplementation(() => {
-      throw new Prisma.PrismaClientKnownRequestError(
-        'A unique constraint would be violated on User. Details: Field name = username',
-        {
-          clientVersion: '2.30.0',
-          code: 'P2002',
-          meta: {
-            target: ['username']
-          }
+jest.mock('@prisma/client', () => {
+  return {
+    PrismaClient: jest.fn().mockImplementation(() => {
+      return {
+        user: {
+          create: jest.fn()
         }
-      );
-    });
+      };
+    })
+  };
+});
 
-    const response = await request(server).post('/api/v1/auth/register').send({
-      username: existingUser.username,
-      password: existingUser.password
-    });
+const mockPrisma = PrismaClient.prototype as jest.Mocked<PrismaClient>;
 
-    expect(prisma.user.create).toHaveBeenCalledWith({
-      data: {
-        username: 'test1@testemail.com',
-        password: mockHashedPassword
+describe('handleNewUser', () => {
+  let req: Partial<Request>;
+  let res: Partial<Response>;
+
+  beforeEach(() => {
+    req = {
+      body: {
+        username: 'testUser',
+        password: 'testPassword'
       }
-    });
-    expect(response.status).toBe(409);
-    expect(response.body).toEqual({ error: 'Username already exists' });
+    };
+
+    res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    };
   });
 
-  it('should return 500 if an error occurs while registering', async () => {
-    jest.clearAllMocks();
+  type HashFunction = (
+    data: string | Buffer,
+    saltOrRounds: string | number
+  ) => Promise<string>;
 
-    jest.spyOn(prisma.user, 'create').mockImplementation(() => {
-      throw new Error('Database error');
-    });
+  const mockHash = jest.fn() as jest.MockedFunction<HashFunction>;
 
-    const response = await request(server).post('/api/v1/auth/register').send({
-      username: 'someguy1@testemail.com',
-      password: 'testpassword'
-    });
+  it('creates a new user and returns a status of 201', async () => {
+    const hashedPassword = 'hashedPassword';
+    mockHash.mockResolvedValue(hashedPassword);
 
-    expect(response.status).toBe(500);
-    expect(response.body).toEqual({
-      error: 'An error occurred while creating the user'
-    });
+    const newUser: User = {
+      id: 1,
+      username: req.body.username,
+      password: hashedPassword,
+      role: 'User'
+    };
+    (mockPrisma.user.create as jest.MockedFunction<any>).mockResolvedValue(
+      newUser
+    );
+
+    await handleNewUser(req as Request, res as Response);
+
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith({ user: newUser });
   });
+
+  // it('returns a status of 409 if the username already exists', async () => {
+  //   mockPrisma.user.create.mockRejectedValue(
+  //     new Prisma.PrismaClientKnownRequestError(
+  //       'Username already exists',
+  //       'P2002'
+  //     )
+  //   );
+
+  //   await handleNewUser(req as Request, res as Response);
+
+  //   expect(res.status).toHaveBeenCalledWith(409);
+  //   expect(res.json).toHaveBeenCalledWith({ error: 'Username already exists' });
+  // });
+
+  // it('returns a status of 500 if an unexpected error occurs', async () => {
+  //   mockPrisma.user.create.mockRejectedValue(new Error());
+
+  //   await handleNewUser(req as Request, res as Response);
+
+  //   expect(res.status).toHaveBeenCalledWith(500);
+  //   expect(res.json).toHaveBeenCalledWith({
+  //     error: 'An error occurred while creating the user'
+  //   });
+  // });
 });

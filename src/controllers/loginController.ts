@@ -10,18 +10,20 @@ export const handleLogin = async (req: Request, res: Response) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
-      res.status(400).json({ error: 'Username and password are required' });
+      return res
+        .status(400)
+        .json({ error: 'Username and password are required' });
     }
     const user: User | null = await prisma.user.findUnique({
       where: { username }
     });
 
     if (!user) {
-      res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: 'User not found' });
     } else {
       const passwordValid = await compare(password, user.password);
       if (!passwordValid) {
-        res.status(401).json({ error: 'Invalid password' });
+        return res.status(401).json({ error: 'Invalid password' });
       } else {
         // Generate JWT that expires in 24h
         const token = sign(

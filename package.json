@@ -12,7 +12,8 @@
     "dev": "nodemon src/index.ts",
     "clean": "rimraf dist",
     "test:clean": "rimraf coverage",
-    "db:build": "npx prisma generate",
+    "db:model": "npx prisma generate",
+    "db:build": "npx prisma migrate dev --name init",
     "db:seed": "ts-node ./db/seedTestData.ts",
     "db:clean": "node ./db/dbscript.js",
     "report": "open ./coverage/index.html"
@@ -42,6 +43,7 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",
     "jest": "^29.7.0",
+    "jest-mock-extended": "^3.0.5",
     "nodemon": "^3.0.2",
     "prettier": "^3.1.1",
     "prisma": "^5.8.0",
