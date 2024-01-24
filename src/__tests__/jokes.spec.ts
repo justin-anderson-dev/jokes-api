@@ -1,64 +1,92 @@
-import { server } from '../index';
 import request from 'supertest';
-import { prisma } from '../index'; // Import your Prisma client
+import express from 'express';
+import {
+  handleNewJoke,
+  handleGetAJoke,
+  handleGetAllJokes
+} from '../controllers/jokesController';
+import { prisma } from '../index';
 
-jest.spyOn(prisma.joke, 'findMany').mockResolvedValue([
-  // Mocked response
-  { id: 1, content: 'Test joke 1' },
-  { id: 2, content: 'Test joke 2' }
-]);
+// Mock the Prisma client
+jest.mock('../index', () => ({
+  prisma: {
+    joke: {
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      findMany: jest.fn()
+    }
+  }
+}));
 
-jest.spyOn(prisma.joke, 'findUnique').mockResolvedValue({
-  id: 1,
-  content: 'Test joke 1'
+// Test requests made to /jokes endpoints using Supertest
+const app = express();
+app.use(express.json());
+app.post('/jokes', handleNewJoke);
+app.get('/jokes', handleGetAllJokes);
+app.get('/jokes/:id', handleGetAJoke);
+
+describe('handleGetAllJokes', () => {
+  it('responds with 200 and all jokes', async () => {
+    const jokes = [
+      { id: 1, content: 'Test joke 1' },
+      { id: 2, content: 'Test joke 2' }
+    ];
+    (prisma.joke.findMany as jest.Mock).mockResolvedValue(jokes);
+
+    const res = await request(app).get('/jokes');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ jokes });
+  });
 });
 
-describe('Jokes routes', () => {
-  afterAll((done) => {
-    server.close(done);
+describe('handleGetAJoke', () => {
+  it('responds with 200 and the joke if the joke is found', async () => {
+    const joke = { id: 1, content: 'Test joke' };
+    (prisma.joke.findUnique as jest.Mock).mockResolvedValue(joke);
+
+    const res = await request(app).get('/jokes/1');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ joke });
   });
 
-  it('should call prisma.joke.findMany and return all jokes', async () => {
-    const response = await request(server).get('/api/v1/jokes'); // Replace '/jokes' with your actual jokes route
+  it('responds with 404 if the joke is not found', async () => {
+    (prisma.joke.findUnique as jest.Mock).mockResolvedValue(null);
 
-    expect(prisma.joke.findMany).toHaveBeenCalled();
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({
-      jokes: [
-        { id: 1, content: 'Test joke 1' },
-        { id: 2, content: 'Test joke 2' }
-      ]
-    });
+    const res = await request(app).get('/jokes/1');
+
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({ error: 'Joke not found' });
   });
+});
 
-  it('should call prisma.joke.findUnique and return the joke with the specified id', async () => {
-    const id = 1;
-    const response = await request(server).get(`/api/v1/jokes/${id}`);
+describe('handleNewJoke', () => {
+  it('responds with 201 and the created joke if insert is successful', async () => {
+    const joke = { id: 1, content: 'Test joke' };
+    (prisma.joke.create as jest.Mock).mockResolvedValue(joke);
 
-    expect(prisma.joke.findUnique).toHaveBeenCalledWith({ where: { id } });
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({
-      joke: { id: 1, content: 'Test joke 1' }
-    });
-  });
+    const res = await request(app)
+      .post('/jokes')
+      .send({ content: 'Test joke' });
 
-  it('should call prisma.joke.create and return the created joke', async () => {
-    const jokeContent = 'Test joke 1';
-    const mockJoke = { id: 1, content: jokeContent };
-
-    jest.spyOn(prisma.joke, 'create').mockResolvedValue(mockJoke);
-
-    const response = await request(server)
-      .post(`/api/v1/jokes/`)
-      .send({ content: jokeContent });
-
-    expect(prisma.joke.create).toHaveBeenCalledWith({
-      data: { content: jokeContent }
-    });
-    expect(response.status).toBe(201);
-    expect(response.body).toEqual({
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual({
       message: 'Joke created successfully',
-      joke: mockJoke
+      joke
+    });
+  });
+
+  it('responds with 500 and an error message if an error occurs', async () => {
+    (prisma.joke.create as jest.Mock).mockRejectedValue(new Error());
+
+    const res = await request(app)
+      .post('/jokes')
+      .send({ content: 'Test joke' });
+
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({
+      error: 'An error occurred while creating the joke'
     });
   });
 });

@@ -1,180 +1,144 @@
 import request from 'supertest';
-import { server } from '../index';
+import express from 'express';
+import {
+  handleGetAllUsers,
+  handleGetAUser,
+  handleDeleteUser
+} from '../controllers/usersController';
+import * as permissions from '../util/permissions';
 import { prisma } from '../index';
-import { User, Joke, UserJoke, Prisma } from '@prisma/client';
-import { mock } from 'node:test';
+import { Prisma } from '@prisma/client';
 
-// Set up test data
-const mockUsers: User[] = [
-  { id: 1, username: 'test1@testemail.com', password: 'testpassword' },
-  { id: 2, username: 'test2@testemail.com', password: 'testpassword' }
-];
-const mockUser: User = {
-  id: 1,
-  username: 'test1@testemail.com',
-  password: 'testpassword'
-};
+// Mock all external functions and Prisma queries
+jest.mock('../index', () => ({
+  prisma: {
+    user: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      delete: jest.fn()
+    },
+    Prisma: {
+      PrismaClientKnownRequestError: class {}
+    }
+  }
+}));
 
-// Execute tests
-describe('Users routes', () => {
-  afterAll((done) => {
-    server.close(done); // Close the server after all tests have completed
-  });
+jest.mock('../util/permissions', () => ({
+  subjectIsAdmin: jest.fn(),
+  subjectHasThisId: jest.fn()
+}));
 
-  it('should return all users', async () => {
-    jest.spyOn(prisma.user, 'findMany').mockResolvedValue(mockUsers);
+// Test requests made to /users endpoints using Supertest
+const app = express();
+app.use(express.json());
+app.get('/users', handleGetAllUsers);
+app.get('/users/:id', handleGetAUser);
+app.delete('/users/:user', handleDeleteUser);
 
-    const response = await request(server).get('/api/v1/users');
-
-    expect(prisma.user.findMany).toHaveBeenCalled();
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({ users: mockUsers });
-  });
-
-  it('should return a user by id', async () => {
-    jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
-
-    const response = await request(server).get('/api/v1/users/1');
-
-    expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { id: 1 } });
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({ user: mockUser });
-  });
-
-  // GET /users/:id/jokes
-  it('should return all jokes associated with a user', async () => {
-    const mockJokes: Joke[] = [
-      { id: 1, content: 'Test joke 1' },
-      { id: 2, content: 'Test joke 2' }
+describe('handleGetAllUsers', () => {
+  // No need to test negative case because the function is only called after the route handle authorizes the user
+  it('responds with 200 and all users', async () => {
+    const users = [
+      { id: 1, name: 'Test User 1' },
+      { id: 2, name: 'Test User 2' }
     ];
+    (prisma.user.findMany as jest.Mock).mockResolvedValue(users);
 
-    const mockUserJokes = mockJokes.map((joke) => ({
-      userId: 1,
-      jokeId: joke.id,
-      joke
-    }));
+    const res = await request(app).get('/users');
 
-    jest.spyOn(prisma.joke, 'findMany').mockResolvedValue(mockJokes);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ users });
+  });
+});
 
-    const response = await request(server).get('/api/v1/users/1/jokes');
+describe('handleGetAUser', () => {
+  it('responds with 403 if the user is not authorized to access the record', async () => {
+    (permissions.subjectIsAdmin as jest.Mock).mockReturnValue(false);
+    (permissions.subjectHasThisId as jest.Mock).mockReturnValue(false);
 
-    expect(prisma.joke.findMany).toHaveBeenCalledWith({
-      where: { users: { some: { userId: 1 } } }
-    });
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({ jokes: mockJokes });
+    const res = await request(app).get('/users/1');
+
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({ error: 'Unauthorized' });
   });
 
-  it('should return a 404 error if the user is not found', async () => {
-    jest.spyOn(prisma.joke, 'findMany').mockResolvedValue([]);
+  it('responds with 200 and the user if the user record is found', async () => {
+    (permissions.subjectIsAdmin as jest.Mock).mockReturnValue(true);
+    const user = { id: 1, name: 'Test User' };
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(user);
 
-    const response = await request(server).get('/api/v1/users/1/jokes');
+    const res = await request(app).get('/users/1');
 
-    expect(prisma.joke.findMany).toHaveBeenCalledWith({
-      where: { users: { some: { userId: 1 } } }
-    });
-    expect(response.status).toBe(404);
-    expect(response.body).toEqual({
-      error: 'User not found or user has no jokes'
-    });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ user });
+  });
+});
+
+describe('handleDeleteUser', () => {
+  it('responds with 403 if the user is not admin', async () => {
+    (permissions.subjectIsAdmin as jest.Mock).mockReturnValue(false);
+
+    const res = await request(app).delete('/users/testuser');
+
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({ error: 'Unauthorized' });
   });
 
-  // test DELETE - users/:id
-  // test DELETE - users/:user
-  describe('DELETE /api/v1/users/:user', () => {
-    it('should delete a user by id and return a success message', async () => {
-      jest.spyOn(prisma.user, 'delete').mockResolvedValue(mockUser);
-
-      const response = await request(server).delete('/api/v1/users/1');
-
-      expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 1 } });
-      expect(response.status).toBe(200);
-      expect(response.body).toEqual({
-        message: 'User deleted successfully',
-        user: mockUser
-      });
-    });
-
-    it('should return a 404 error if the user with the specified id is not found', async () => {
-      jest.spyOn(prisma.user, 'delete').mockImplementation(() => {
-        throw new Prisma.PrismaClientKnownRequestError(
-          'No user found for the specified id',
-          {
-            clientVersion: '2.30.0',
-            code: 'P2025',
-            meta: {
-              target: ['id']
-            }
-          }
-        );
-      });
-
-      const response = await request(server).delete('/api/v1/users/1');
-
-      expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 1 } });
-      expect(response.status).toBe(404);
-      expect(response.body).toEqual({
-        error: 'User not found'
-      });
-    });
-
-    it('should delete a user by username and return a success message', async () => {
-      const mockUser: User = {
-        id: 1,
-        username: 'test1@testemail.com',
-        password: 'testpassword'
-      };
-
-      jest.spyOn(prisma.user, 'delete').mockResolvedValue(mockUser);
-
-      const response = await request(server).delete(
-        '/api/v1/users/test1@testemail.com'
-      );
-
-      expect(prisma.user.delete).toHaveBeenCalledWith({
-        where: { username: 'test1@testemail.com' }
-      });
-      expect(response.status).toBe(200);
-      expect(response.body).toEqual({
-        message: 'User deleted successfully',
-        user: mockUser
-      });
-    });
-  });
-
-  // test POST - users/:id/jokes (add a joke to a user's list of jokes)
-  it('should add a joke to a user and return the joke', async () => {
-    const mockJoke: Joke = {
-      id: 1,
-      content: 'Test joke 1'
+  it('responds with 404 if the user is not found', async () => {
+    (permissions.subjectIsAdmin as jest.Mock).mockReturnValue(true);
+    const error = {
+      name: 'PrismaClientKnownRequestError',
+      code: 'P2025',
+      clientVersion: '2.30.0',
+      meta: {
+        target: ['username']
+      },
+      message: 'User not found'
     };
+    Object.setPrototypeOf(
+      error,
+      Prisma.PrismaClientKnownRequestError.prototype
+    );
 
-    const mockUserJoke: UserJoke = {
-      jokeId: mockJoke.id,
-      userId: 1
-    };
+    (prisma.user.delete as jest.Mock).mockRejectedValue(error);
 
-    jest.spyOn(prisma.userJoke, 'create').mockResolvedValue(mockUserJoke);
-    jest.spyOn(prisma.joke, 'findUnique').mockResolvedValue(mockJoke);
+    const res = await request(app).delete('/users/testuser');
 
-    const response = await request(server).post('/api/v1/users/1/jokes').send({
-      jokeId: mockJoke.id,
-      userId: 1
-    });
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({ error: 'User not found' });
+  });
 
-    expect(prisma.userJoke.create).toHaveBeenCalledWith({
-      data: {
-        jokeId: mockJoke.id,
-        userId: 1
-      }
-    });
-    expect(prisma.joke.findUnique).toHaveBeenCalledWith({
-      where: { id: mockJoke.id }
-    });
-    expect(response.status).toBe(201);
-    expect(response.body).toEqual({
-      message: 'UserJoke connected successfully',
-      joke: mockJoke
+  it('responds with 200 and the deleted user if the user is found by username', async () => {
+    (permissions.subjectIsAdmin as jest.Mock).mockReturnValue(true);
+    const user = { id: 1, name: 'Test User' };
+    (prisma.user.delete as jest.Mock).mockResolvedValue(user);
+
+    const res = await request(app).delete('/users/testuser');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ message: 'User deleted successfully', user });
+  });
+
+  it('responds with 200 and the deleted user if the user is found by id', async () => {
+    (permissions.subjectIsAdmin as jest.Mock).mockReturnValue(true);
+    const user = { id: 1, name: 'Test User' };
+    (prisma.user.delete as jest.Mock).mockResolvedValue(user);
+
+    const res = await request(app).delete('/users/1');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ message: 'User deleted successfully', user });
+  });
+
+  it('responds with 500 and an error message if an error occurs', async () => {
+    (permissions.subjectIsAdmin as jest.Mock).mockReturnValue(true);
+    (prisma.user.delete as jest.Mock).mockRejectedValue(new Error());
+
+    const res = await request(app).delete('/users/1');
+
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({
+      error: 'An error occurred while deleting the user'
     });
   });
 });

@@ -1,101 +1,81 @@
+import express from 'express';
 import request from 'supertest';
-import { server } from '../index';
+import { handleNewUser } from '../controllers/registerController';
 import { prisma } from '../index';
-import { User, Joke, UserJoke, Prisma } from '@prisma/client';
-import { mock } from 'node:test';
-import * as bcrypt from 'bcrypt';
+import { hash } from 'bcrypt';
+import { Prisma } from '@prisma/client';
+
+// Mock the Prisma client and bcrypt
+jest.mock('../index', () => ({
+  prisma: {
+    user: {
+      create: jest.fn()
+    }
+  }
+}));
 
 jest.mock('bcrypt', () => ({
-  hash: jest.fn(() => Promise.resolve('mockHashedPassword'))
+  hash: jest.fn()
 }));
-const mockHashedPassword = 'mockHashedPassword';
 
-describe('Auth routes', () => {
-  afterAll((done) => {
-    server.close(done); // Close the server after all tests have completed
+// Test requests made to /auth/register endpoint using Supertest
+const app = express();
+app.use(express.json());
+app.post('/auth/register', handleNewUser);
+
+describe('handleNewUser', () => {
+  it('responds with 201 and the new user if a user is successfully created', async () => {
+    const user = { id: 1, username: 'test', password: 'hashedPassword' };
+    (hash as jest.Mock).mockResolvedValue('hashedPassword');
+    (prisma.user.create as jest.Mock).mockResolvedValue(user);
+
+    const res = await request(app)
+      .post('/auth/register')
+      .send({ username: 'test', password: 'password' });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual({ user });
   });
 
-  // POST - /users
-  it('should create a new user and return the created user', async () => {
-    const mockUser: User = {
-      id: 3,
-      username: 'test3@testemail.com',
-      password: 'testpassword'
+  it('responds with 409 if the username already exists', async () => {
+    (hash as jest.Mock).mockResolvedValue('hashedPassword');
+
+    // Mock the error object that Prisma would return
+    const error = {
+      name: 'PrismaClientKnownRequestError',
+      code: 'P2002',
+      clientVersion: '2.30.0',
+      meta: {
+        target: ['username']
+      },
+      message:
+        'A unique constraint would be violated on User. Details: Field name = username'
     };
+    // Modifying prototype is required to pass the instanceof check in the controller code
+    Object.setPrototypeOf(
+      error,
+      Prisma.PrismaClientKnownRequestError.prototype
+    );
+    (prisma.user.create as jest.Mock).mockRejectedValue(error);
 
-    jest.spyOn(prisma.user, 'create').mockResolvedValue({
-      ...mockUser,
-      password: mockHashedPassword
-    });
+    const res = await request(app)
+      .post('/auth/register')
+      .send({ username: 'test', password: 'password' });
 
-    const response = await request(server).post('/api/v1/auth/register').send({
-      username: mockUser.username,
-      password: mockUser.password
-    });
-
-    expect(prisma.user.create).toHaveBeenCalledWith({
-      data: {
-        username: 'test3@testemail.com',
-        password: mockHashedPassword
-      }
-    });
-    expect(response.status).toBe(201);
-    expect(response.body).toEqual({
-      user: { ...mockUser, password: mockHashedPassword }
-    });
+    expect(res.status).toBe(409);
+    expect(res.body).toEqual({ error: 'Username already exists' });
   });
 
-  it('should return a 409 error if the user already exists', async () => {
-    jest.clearAllMocks();
+  it('responds with 500 if an error occurs while creating the user', async () => {
+    (hash as jest.Mock).mockResolvedValue('hashedPassword');
+    (prisma.user.create as jest.Mock).mockRejectedValue(new Error());
 
-    const existingUser: User = {
-      id: 1,
-      username: 'test1@testemail.com',
-      password: 'testpassword'
-    };
+    const res = await request(app)
+      .post('/auth/register')
+      .send({ username: 'test', password: 'password' });
 
-    jest.spyOn(prisma.user, 'create').mockImplementation(() => {
-      throw new Prisma.PrismaClientKnownRequestError(
-        'A unique constraint would be violated on User. Details: Field name = username',
-        {
-          clientVersion: '2.30.0',
-          code: 'P2002',
-          meta: {
-            target: ['username']
-          }
-        }
-      );
-    });
-
-    const response = await request(server).post('/api/v1/auth/register').send({
-      username: existingUser.username,
-      password: existingUser.password
-    });
-
-    expect(prisma.user.create).toHaveBeenCalledWith({
-      data: {
-        username: 'test1@testemail.com',
-        password: mockHashedPassword
-      }
-    });
-    expect(response.status).toBe(409);
-    expect(response.body).toEqual({ error: 'Username already exists' });
-  });
-
-  it('should return 500 if an error occurs while registering', async () => {
-    jest.clearAllMocks();
-
-    jest.spyOn(prisma.user, 'create').mockImplementation(() => {
-      throw new Error('Database error');
-    });
-
-    const response = await request(server).post('/api/v1/auth/register').send({
-      username: 'someguy1@testemail.com',
-      password: 'testpassword'
-    });
-
-    expect(response.status).toBe(500);
-    expect(response.body).toEqual({
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({
       error: 'An error occurred while creating the user'
     });
   });

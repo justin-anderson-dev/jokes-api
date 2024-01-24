@@ -11,6 +11,9 @@ export const handleGetAJoke = async (req: Request, res: Response) => {
   const result = await prisma.joke.findUnique({
     where: { id: Number(id) }
   });
+  if (!result) {
+    return res.status(404).json({ error: 'Joke not found' });
+  }
   res.status(200).json({ joke: result });
 };
 

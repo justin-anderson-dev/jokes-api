@@ -3,6 +3,7 @@ import { prisma } from '../index';
 import { Prisma, User } from '@prisma/client';
 import * as permissions from '../util/permissions';
 
+// only admins can get all user records
 export const handleGetAllUsers = async (req: Request, res: Response) => {
   const users: User[] | null = await prisma.user.findMany();
   res.status(200).json({ users: users });

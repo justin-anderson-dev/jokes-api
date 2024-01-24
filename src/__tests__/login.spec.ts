@@ -1,95 +1,82 @@
+import express from 'express';
 import request from 'supertest';
-import { server } from '../index';
+import bcrypt from 'bcrypt';
+import { handleLogin } from '../controllers/loginController';
 import { prisma } from '../index';
-import * as bcrypt from 'bcrypt';
-import { mock } from 'node:test';
+
+// Mock the Prisma client and bcrypt
+jest.mock('../index', () => ({
+  prisma: {
+    user: {
+      findUnique: jest.fn()
+    }
+  }
+}));
 
 jest.mock('bcrypt', () => ({
-  hash: jest.fn(() => Promise.resolve('mockHashedPassword')),
-  compare: jest.fn(() => Promise.resolve(true)) // Mocks bcrypt.compare to always return true
+  compare: jest.fn()
 }));
-const mockHashedPassword = 'mockHashedPassword';
 
-describe('Login routes', () => {
-  afterAll((done) => {
-    server.close(done); // Close the server after all tests have completed
+// Test requests made to /auth/login endpoint using Supertest
+const app = express();
+app.use(express.json());
+app.post('/auth/login', handleLogin);
+
+describe('handleLogin', () => {
+  it('responds with 400 if username or password is not provided', async () => {
+    const res = await request(app).post('/auth/login').send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ error: 'Username and password are required' });
   });
 
-  it('should return 404 if the user does not exist', async () => {
-    jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(null);
+  it('responds with 404 if the user is not found', async () => {
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 
-    const response = await request(server).post('/api/v1/auth/login').send({
-      username: 'nonexistent@testemail.com',
-      password: 'testpassword'
-    });
+    const res = await request(app)
+      .post('/auth/login')
+      .send({ username: 'test', password: 'test' });
 
-    expect(response.status).toBe(404);
-    expect(response.body).toEqual({ error: 'User not found' });
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({ error: 'User not found' });
   });
 
-  it('should return 401 if the password is invalid', async () => {
-    jest
-      .spyOn(bcrypt, 'compare')
-      .mockImplementation(() => Promise.resolve(false));
-
-    const existingUser = {
-      id: 1,
-      username: 'test1@testemail.com',
-      password: mockHashedPassword
-    };
-
-    jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(existingUser);
-
-    const response = await request(server).post('/api/v1/auth/login').send({
-      username: existingUser.username,
-      password: 'wrongpassword'
+  it('responds with 401 if the password is invalid', async () => {
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      password: 'test'
     });
+    (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
-    expect(response.status).toBe(401);
-    expect(response.body).toEqual({ error: 'Invalid password' });
+    const res = await request(app)
+      .post('/auth/login')
+      .send({ username: 'test', password: 'test' });
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ error: 'Invalid password' });
   });
 
-  it('should return 200 and the user object if the login is successful', async () => {
-    const existingUser = {
-      id: 1,
-      username: 'test1@testemail.com',
-      password: mockHashedPassword
-    };
-
-    jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(existingUser);
-    jest
-      .spyOn(bcrypt, 'compare')
-      .mockImplementation(() => Promise.resolve(true));
-
-    const response = await request(server).post('/api/v1/auth/login').send({
-      username: existingUser.username,
-      password: 'testpassword'
+  it('responds with 200 and a jwt token if the password is valid', async () => {
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      password: 'test'
     });
+    (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({
-      message: 'Login successful',
-      user: {
-        id: existingUser.id,
-        username: existingUser.username,
-        password: mockHashedPassword
-      }
-    });
+    const res = await request(app)
+      .post('/auth/login')
+      .send({ username: 'test', password: 'test' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('token');
   });
 
-  it('should return 500 if an error occurs while logging in', async () => {
-    jest.spyOn(prisma.user, 'findUnique').mockImplementation(() => {
-      throw new Error('Database error');
-    });
+  it('responds with 500 if an error occurs', async () => {
+    (prisma.user.findUnique as jest.Mock).mockRejectedValue(new Error());
 
-    const response = await request(server).post('/api/v1/auth/login').send({
-      username: 'test1@testemail.com',
-      password: 'testpassword'
-    });
+    const res = await request(app)
+      .post('/auth/login')
+      .send({ username: 'test', password: 'test' });
 
-    expect(response.status).toBe(500);
-    expect(response.body).toEqual({
-      error: 'An error occurred while logging in'
-    });
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({ error: 'An error occurred while logging in' });
   });
 });
