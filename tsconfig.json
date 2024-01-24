@@ -14,8 +14,9 @@
     "moduleResolution": "NodeNext",
     "module": "NodeNext",
     "outDir": "dist",
+    "rootDir": "src",
     "lib": ["es2022"]
   },
-  "include": ["./src/**/*.ts", "db/seedTestData.ts"],
-  "exclude": ["./node_modules", "./dist", "./src/__tests__"]
+  "include": ["./src/**/*.ts", "./src/**/*.js"],
+  "exclude": ["./dist", "./src/__tests__"]
 }

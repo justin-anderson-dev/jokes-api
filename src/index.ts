@@ -11,7 +11,7 @@ dotenv.config();
 
 import { port } from './config';
 
-export const prisma: PrismaClient = new PrismaClient();
+export const prisma = new PrismaClient();
 
 // Initialize Express app
 export const app: Express = express();

@@ -10,5 +10,14 @@ module.exports = {
   coverageReporters: ['clover', 'json', 'lcov', 'text', 'html'],
   transform: {
     '^.+\\.(ts|tsx)$': 'ts-jest'
+  },
+  testPathIgnorePatterns: ['<rootDir>/src/__tests__/_old/'],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: -10
+    }
   }
 };

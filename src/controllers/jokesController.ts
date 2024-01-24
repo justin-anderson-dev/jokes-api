@@ -11,6 +11,9 @@ export const handleGetAJoke = async (req: Request, res: Response) => {
   const result = await prisma.joke.findUnique({
     where: { id: Number(id) }
   });
+  if (!result) {
+    return res.status(404).json({ error: 'Joke not found' });
+  }
   res.status(200).json({ joke: result });
 };
 
@@ -27,5 +30,19 @@ export const handleNewJoke = async (req: Request, res: Response) => {
     res
       .status(500)
       .json({ error: 'An error occurred while creating the joke' });
+  }
+};
+
+export const handleDeleteJoke = async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  try {
+    const result = await prisma.joke.delete({
+      where: { id: Number(id) }
+    });
+    res.status(200).json({ message: 'Joke deleted successfully', result });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: 'An error occurred while deleting the joke' });
   }
 };
