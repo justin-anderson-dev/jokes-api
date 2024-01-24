@@ -10,7 +10,8 @@ import {
 } from '../controllers/usersController';
 import {
   handleAddJokeToUser,
-  handleGetJokesByUserId
+  handleGetJokesByUserId,
+  handleDeleteJokeFromUser
 } from '../controllers/userJokesController';
 
 const router = Router();
@@ -46,6 +47,13 @@ router.post(
   '/:id/jokes',
   [checkToken, checkRole([RoleName.User, RoleName.Admin])],
   handleAddJokeToUser
+);
+
+// DELETE - /users/:id/jokes
+router.delete(
+  '/:id/jokes',
+  [checkToken, checkRole([RoleName.User, RoleName.Admin])],
+  handleDeleteJokeFromUser
 );
 
 export default router;

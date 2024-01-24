@@ -18,3 +18,5 @@ export const jwt_issuer = String(process.env.JWT_ISSUER);
 export const prefix = String(process.env.API_PREFIX);
 export const version = String(process.env.API_VERSION);
 export const base_url = `${prefix}/${version}`;
+
+export const postmanKey = String(process.env.POSTMAN_API_KEY);
