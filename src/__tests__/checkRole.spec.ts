@@ -4,6 +4,7 @@ import { checkRole } from '../middleware/checkRole';
 import { RoleName } from '@prisma/client';
 import { prisma } from '../index';
 
+// All external functions and Prisma queries are mocked using Jest's jest.fn() function
 jest.mock('../index', () => ({
   prisma: {
     user: {
@@ -13,6 +14,8 @@ jest.mock('../index', () => ({
 }));
 
 const app = express();
+
+// simulate the presence of a decoded JWT token in the request
 app.use((req, res, next) => {
   (req as any).tokenPayload = {
     payload: {
@@ -22,9 +25,11 @@ app.use((req, res, next) => {
   next();
 });
 app.use(checkRole([RoleName.Admin]));
+
+// simulate a route handler sending success message if checkRole passes
 app.use((req, res) => res.status(200).json({ message: 'Success' }));
 
-describe('checkRole', () => {
+describe('checkRole middleware', () => {
   it('responds with 404 if the user is not found', async () => {
     (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 

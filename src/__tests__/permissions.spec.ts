@@ -1,10 +1,9 @@
-import { Request } from 'express';
 import * as permissions from '../util/permissions';
 import { CustomRequest } from '../middleware/checkToken';
 import { RoleName } from '@prisma/client';
 
 describe('subjectHasThisId', () => {
-  it('should return true if the subject id matches the id in the request parameters', () => {
+  it('should return true if the subject id matches the request params id', () => {
     const req: Partial<CustomRequest> = {
       tokenPayload: {
         payload: {
@@ -20,7 +19,7 @@ describe('subjectHasThisId', () => {
     expect(result).toBe(true);
   });
 
-  it('should return false if the subject id does not match the id in the request parameters', () => {
+  it('should return false if the subject id does not match the request params id', () => {
     const req: Partial<CustomRequest> = {
       tokenPayload: {
         payload: {
@@ -38,7 +37,7 @@ describe('subjectHasThisId', () => {
 });
 
 describe('subjectHasThisUsername', () => {
-  it('should return true if the subject username matches the username in the request parameters', () => {
+  it('should return true if the subject username matches the request params username', () => {
     const req: Partial<CustomRequest> = {
       tokenPayload: {
         payload: {
@@ -54,7 +53,7 @@ describe('subjectHasThisUsername', () => {
     expect(result).toBe(true);
   });
 
-  it('should return false if the subject username does not match the username in the request parameters', () => {
+  it('should return false if the subject username does not match the request params username', () => {
     const req: Partial<CustomRequest> = {
       tokenPayload: {
         payload: {

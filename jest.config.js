@@ -11,5 +11,13 @@ module.exports = {
   transform: {
     '^.+\\.(ts|tsx)$': 'ts-jest'
   },
-  testPathIgnorePatterns: ['<rootDir>/src/__tests__/_old/']
+  testPathIgnorePatterns: ['<rootDir>/src/__tests__/_old/'],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: -10
+    }
+  }
 };

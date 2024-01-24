@@ -1,13 +1,21 @@
 import express from 'express';
 import request from 'supertest';
-import { handleGetJokesByUserId } from '../controllers/userJokesController';
+import {
+  handleGetJokesByUserId,
+  handleAddJokeToUser
+} from '../controllers/userJokesController';
 import { prisma } from '../index';
 import * as permissions from '../util/permissions';
 
+// All external functions and Prisma queries are mocked using Jest's jest.fn() function
 jest.mock('../index', () => ({
   prisma: {
+    userJoke: {
+      create: jest.fn()
+    },
     joke: {
-      findMany: jest.fn()
+      findMany: jest.fn(),
+      findUnique: jest.fn()
     }
   }
 }));
@@ -17,7 +25,10 @@ jest.mock('../util/permissions', () => ({
   subjectIsAdmin: jest.fn()
 }));
 
+// Test requests made to /users/:id/jokes endpoints using Supertest
 const app = express();
+app.use(express.json());
+app.post('/users/:id/jokes', handleAddJokeToUser);
 app.get('/users/:id/jokes', handleGetJokesByUserId);
 
 describe('handleGetJokesByUserId', () => {
@@ -50,5 +61,41 @@ describe('handleGetJokesByUserId', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ jokes });
+  });
+});
+describe('handleAddJokeToUser', () => {
+  it('responds with 403 if the user is unauthorized', async () => {
+    (permissions.subjectHasThisId as jest.Mock).mockReturnValue(false);
+    (permissions.subjectIsAdmin as jest.Mock).mockReturnValue(false);
+
+    const res = await request(app)
+      .post('/users/1/jokes')
+      .send({ jokeId: 1, userId: 1 });
+
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({ error: 'Unauthorized' });
+  });
+
+  it('responds with 201 and the created joke if the user is authorized', async () => {
+    (permissions.subjectHasThisId as jest.Mock).mockReturnValue(true);
+    (permissions.subjectIsAdmin as jest.Mock).mockReturnValue(true);
+    (prisma.userJoke.create as jest.Mock).mockResolvedValue({
+      jokeId: 1,
+      userId: 1
+    });
+    (prisma.joke.findUnique as jest.Mock).mockResolvedValue({
+      id: 1,
+      content: 'Test joke'
+    });
+
+    const res = await request(app)
+      .post('/users/1/jokes')
+      .send({ jokeId: 1, userId: 1 });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual({
+      message: 'UserJoke connected successfully',
+      joke: { id: 1, content: 'Test joke' }
+    });
   });
 });
