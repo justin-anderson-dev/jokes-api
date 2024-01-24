@@ -42,3 +42,17 @@ export const handleAddJokeToUser = async (req: Request, res: Response) => {
     .status(201)
     .json({ message: 'UserJoke connected successfully', joke: result });
 };
+
+// USER role users can only delete jokes from their own list
+// ADMIN role users can delete jokes from any user's list
+export const handleDeleteJokeFromUser = async (req: Request, res: Response) => {
+  if (!permissions.subjectHasThisId(req) && !permissions.subjectIsAdmin(req)) {
+    res.status(403).json({ error: 'Unauthorized' });
+    return;
+  }
+  const { jokeId, userId } = req.body;
+  const result = await prisma.userJoke.delete({
+    where: { userId_jokeId: { userId: Number(userId), jokeId: Number(jokeId) } }
+  });
+  res.status(200).json({ message: 'UserJoke deleted successfully', result });
+};

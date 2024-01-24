@@ -17,7 +17,8 @@
     "db:build": "npx prisma migrate dev --name init",
     "db:seed": "ts-node ./db/seedTestData.ts",
     "db:clean": "node ./db/dbscript.js",
-    "report": "open ./coverage/index.html"
+    "report": "open ./coverage/index.html",
+    "postman:test": "node ./postmanTestRunScript.js"
   },
   "keywords": [],
   "author": "",
@@ -25,7 +26,6 @@
   "dependencies": {
     "@prisma/client": "^5.8.0",
     "bcrypt": "^5.1.1",
-    "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.3",
@@ -40,6 +40,7 @@
     "@types/supertest": "^6.0.2",
     "@typescript-eslint/eslint-plugin": "^6.18.1",
     "@typescript-eslint/parser": "^6.18.1",
+    "dotenv-cli": "^7.3.0",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",

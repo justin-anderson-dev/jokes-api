@@ -19,4 +19,11 @@ router.post(
   jokesController.handleNewJoke
 );
 
+// DELETE /jokes/:id
+router.delete(
+  '/:id',
+  [checkToken, checkRole([RoleName.Admin])],
+  jokesController.handleDeleteJoke
+);
+
 export default router;
