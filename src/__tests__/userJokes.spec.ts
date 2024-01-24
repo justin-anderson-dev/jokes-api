@@ -2,7 +2,8 @@ import express from 'express';
 import request from 'supertest';
 import {
   handleGetJokesByUserId,
-  handleAddJokeToUser
+  handleAddJokeToUser,
+  handleDeleteJokeFromUser
 } from '../controllers/userJokesController';
 import { prisma } from '../index';
 import * as permissions from '../util/permissions';
@@ -11,7 +12,8 @@ import * as permissions from '../util/permissions';
 jest.mock('../index', () => ({
   prisma: {
     userJoke: {
-      create: jest.fn()
+      create: jest.fn(),
+      delete: jest.fn()
     },
     joke: {
       findMany: jest.fn(),
@@ -30,6 +32,7 @@ const app = express();
 app.use(express.json());
 app.post('/users/:id/jokes', handleAddJokeToUser);
 app.get('/users/:id/jokes', handleGetJokesByUserId);
+app.delete('/users/:id/jokes', handleDeleteJokeFromUser);
 
 describe('handleGetJokesByUserId', () => {
   it('responds with 403 if the user is not authorized', async () => {
@@ -96,6 +99,39 @@ describe('handleAddJokeToUser', () => {
     expect(res.body).toEqual({
       message: 'UserJoke connected successfully',
       joke: { id: 1, content: 'Test joke' }
+    });
+  });
+});
+
+describe('handleDeleteJokeFromUser', () => {
+  it('responds with 403 if the user is unauthorized', async () => {
+    (permissions.subjectHasThisId as jest.Mock).mockReturnValue(false);
+    (permissions.subjectIsAdmin as jest.Mock).mockReturnValue(false);
+
+    const res = await request(app)
+      .delete('/users/1/jokes')
+      .send({ jokeId: 1, userId: 1 });
+
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({ error: 'Unauthorized' });
+  });
+
+  it('responds with 200 and the deleted joke if the user is authorized', async () => {
+    (permissions.subjectHasThisId as jest.Mock).mockReturnValue(true);
+    (permissions.subjectIsAdmin as jest.Mock).mockReturnValue(true);
+    (prisma.userJoke.delete as jest.Mock).mockResolvedValue({
+      jokeId: 1,
+      userId: 1
+    });
+
+    const res = await request(app)
+      .delete('/users/1/jokes')
+      .send({ jokeId: 1, userId: 1 });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      message: 'UserJoke deleted successfully',
+      result: { jokeId: 1, userId: 1 }
     });
   });
 });

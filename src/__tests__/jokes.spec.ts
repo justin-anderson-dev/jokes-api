@@ -3,7 +3,8 @@ import express from 'express';
 import {
   handleNewJoke,
   handleGetAJoke,
-  handleGetAllJokes
+  handleGetAllJokes,
+  handleDeleteJoke
 } from '../controllers/jokesController';
 import { prisma } from '../index';
 
@@ -13,7 +14,8 @@ jest.mock('../index', () => ({
     joke: {
       create: jest.fn(),
       findUnique: jest.fn(),
-      findMany: jest.fn()
+      findMany: jest.fn(),
+      delete: jest.fn()
     }
   }
 }));
@@ -24,6 +26,7 @@ app.use(express.json());
 app.post('/jokes', handleNewJoke);
 app.get('/jokes', handleGetAllJokes);
 app.get('/jokes/:id', handleGetAJoke);
+app.delete('/jokes/:id', handleDeleteJoke);
 
 describe('handleGetAllJokes', () => {
   it('responds with 200 and all jokes', async () => {
@@ -87,6 +90,36 @@ describe('handleNewJoke', () => {
     expect(res.status).toBe(500);
     expect(res.body).toEqual({
       error: 'An error occurred while creating the joke'
+    });
+  });
+});
+
+describe('handleDeleteJoke', () => {
+  it('responds with 200 and a success message if the joke is deleted successfully', async () => {
+    const jokeId = 1;
+    (prisma.joke.delete as jest.Mock).mockResolvedValue({
+      id: jokeId,
+      content: 'Test joke'
+    });
+
+    const res = await request(app).delete(`/jokes/${jokeId}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      message: 'Joke deleted successfully',
+      result: { id: jokeId, content: 'Test joke' }
+    });
+  });
+
+  it('responds with 500 and an error message if an error occurs', async () => {
+    const jokeId = 1;
+    (prisma.joke.delete as jest.Mock).mockRejectedValue(new Error());
+
+    const res = await request(app).delete(`/jokes/${jokeId}`);
+
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({
+      error: 'An error occurred while deleting the joke'
     });
   });
 });
